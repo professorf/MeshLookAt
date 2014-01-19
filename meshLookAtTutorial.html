@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Tutorial - mesh.lookAt - ProfessorF </title>
+    <script src="js/babylon.js"></script>
+    <script src="js/hand.js"></script>
+    <script>
+        window.addEventListener("load", start); // 1st line of code executed
+        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("change", handleChange);
+
+        var canvas, engine, scene, light, light2, camera;  // Engine Globals
+        var looker, yawCor, rollCor, pitchCor, moveLooker; // Looker Globals
+        var target;                 
+
+        function start() {
+            canvas = document.getElementById("cvRAVE");
+            engine = new BABYLON.Engine(canvas, true);
+            scene = new BABYLON.Scene(engine);
+            light = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(1, -1, 1), scene);
+            light2 = new BABYLON.DirectionalLight("sun2", new BABYLON.Vector3(0, -1, 0), scene);
+            light2.intensity = 0.5;
+            camera = new BABYLON.FreeCamera("cam", new BABYLON.Vector3(0, 50, -50), scene);
+            camera.rotation.x = Math.PI / 4; // look down 45 degrees
+
+            ground = new BABYLON.Mesh.CreateGround("ground", 1024, 1024, 1, scene);
+            ground.material = new BABYLON.StandardMaterial("texGround", scene);
+            ground.material.diffuseTexture = new BABYLON.Texture("geotrigtexture.png", scene);
+
+            BABYLON.SceneLoader.ImportMesh("", "assets/pointer/", "pointer.babylon", scene, function (meshes, particles, skeletons) {
+                looker = meshes[0];
+                looker.position = new BABYLON.Vector3(-5, 5, 5); // you can set this yourself
+                yawCor =0; 
+                pitchCor = 0;
+                rollCor = 0;
+                scl = 1;
+                moveLooker = false;
+            });
+
+            target = BABYLON.Mesh.CreateBox("orangeBox", 5, scene);
+            target.position.x = 20;
+            target.position.z = 0;
+            target.position.y = 0;
+            target.material = new BABYLON.StandardMaterial("orangeMaterial", scene);
+            target.material.diffuseColor = new BABYLON.Color3(1, .5, 0);         
+
+            scene.activeCamera.attachControl(canvas);
+            engine.runRenderLoop(update);
+
+        }
+        function update() {
+            if (target && looker) {
+                looker.lookAt(target.position);
+                if (moveLooker) {
+                    var dv = target.position.subtract(looker.position);
+                    if (dv.length() > 1) { // if distance from target is > epsilon, move closer
+                        dv.normalize();    // otherwise you jump to the position
+                        looker.position = looker.position.add(dv);
+                    } else moveLooker = false;
+                }
+            }
+            scene.render();
+        }
+
+        function handleKeyDown(event) {
+            ch = String.fromCharCode(event.keyCode);
+            if (ch == "W")
+                target.position.z += 1;
+            if (ch == "S")
+                target.position.z -= 1;
+            if (ch == "D")
+                target.position.x += 1;
+            if (ch == "A")
+                target.position.x -= 1;
+            if (ch == "F")
+                target.position.y += 1;
+            if (ch == "V")
+                target.position.y -= 1;
+            if (ch == " ") {
+                moveLooker = true;
+            }
+        }
+
+        function handleChange(event) {
+            var x = event.target;
+            if (looker) looker.dispose();
+            if (x.value == "Kesha") {
+                BABYLON.SceneLoader.ImportMesh("", "assets/pointer/", "pointer.babylon", scene, function (meshes, particles, skeletons) {
+                    looker = meshes[0];
+                    looker.position = new BABYLON.Vector3(-5, 5, 5);
+                    yawCor = 0; 
+                    pitchCor = 0;
+                    rollCor = 0;
+                });
+            }
+            else {
+                BABYLON.SceneLoader.ImportMesh("him", "assets/dude/", "dude.babylon", scene, function (meshes, particles, skeletons) {
+                    looker = meshes[0];
+                    looker.position = new BABYLON.Vector3(-5, 0, 5); 
+                    yawCor = 0;
+                    pitchCor = 0;
+                    rollCor = 0;
+                    scl = .25;
+                    looker.scaling = new BABYLON.Vector3(scl, scl, scl);
+                    scene.beginAnimation(skeletons[0], 0, 100, true, 1.0);
+                });
+            }
+        }
+    </script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        #cvRAVE {
+            width: 100%;
+            height: 90%;
+        }
+        #dvMenu {
+            width: 100%;
+            height: 10%;
+            font:10pt arial;
+        }
+    </style>
+</head>
+<body>
+    <div id="dvMenu">
+        Target Keys: W,A,S,D,F (up),V (down)<br />
+        Looker Keys: SPACE BAR (moves towards target)<br />
+        Model: <select id="seLooker"><option>Kesha</option><option>Dude</option></select><br />
+    </div>
+    <canvas id="cvRAVE"></canvas>
+</body>
+</html>
